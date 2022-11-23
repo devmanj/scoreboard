@@ -4,7 +4,6 @@ class ScoreBoard {
 		this.scoreBoard = document.createElement('div');
 		this.scoreBoard.classList.add('scoreBoard');
 		this.upToBat = 'away';
-		this.clockTime;
 
 		//HOME CONTAINER
 		this.homeTeam = home;
@@ -53,9 +52,6 @@ class ScoreBoard {
 		this.inningSideIcon.innerHTML = "arrow_drop_up";
 		this.inningSideContainer.append(this.inningSideIcon);
 		this.inningContainer.append(this.inningSideContainer);
-		this.inningCount = document.createElement('div');
-		this.inningCount.classList.add('inningCount');
-		this.inningContainer.append(this.inningCount);
 		this.inning = 1;
 		this.inningNumber = document.createElement('div');
 		this.inningNumber.classList.add('inningNumber');
@@ -83,7 +79,7 @@ class ScoreBoard {
 		this.homePlate.dataset.baseNum = 4;
 		this.baseContainer.append(this.homePlate);
 		this.bases = [this.firstBase,this.secondBase,this.thirdBase,this.homePlate];
-
+		this.baseStatus = this.bases.map(base => {return base.classList.contains('active')});
 		//OUT CONTAINER [INSIDE BASE CONTAINER]
 		this.outCount = 0;
 		this.outContainer = document.createElement('div');
@@ -192,38 +188,39 @@ class ScoreBoard {
 		this.controller.append(this.timerButton);
 
 		this.print();
-		this.updater = setInterval(this.getData.bind(this),1000);
+		this.updater = setInterval(this.getData.bind(this),300);
 	}
 	addRun(team){
-		this[team + 'Score'].innerHTML = parseInt(this[team + 'Score'].innerHTML)+1;
+		if(team === 'away'){
+			this.awayScore++;
+		}else{
+			this.homeScore++;
+		}
 		this.saveData();
 	}
 	addBall(){
-		if(this.ballCount===3){
+		if(this.ballCount>=3){
 			this.walk();
 		}else{
 			this.ballCount++;
-			this.countContainer.innerHTML = `${this.ballCount}-${this.strikeCount}`;
+			this.saveData();
 		}
-		this.saveData();
 	}
 	walk(){
 		this.ballCount = 1;
 		this.strikeCount = 1;
-		this.countContainer.innerHTML = `${this.ballCount}-${this.strikeCount}`;
-		if(this.bases[0].classList.contains('active')){
-			if(this.bases[1].classList.contains('active')){
-				if(this.bases[2].classList.contains('active')){
-					//console.log(this.upToBat);
+		if(this.baseStatus[0]){
+			if(this.baseStatus[1]){
+				if(this.baseStatus[2]){
 					this.addRun(this.upToBat);
 				}else{
-					this.bases[2].classList.add('active');
+					this.baseStatus[2] = true;
 				}	
 			}else{
-				this.bases[1].classList.add('active');
+				this.baseStatus[1] = true;
 			}
 		}else{
-			this.bases[0].classList.add('active');
+			this.baseStatus[0] = true;
 		}
 		this.saveData();
 	}
@@ -240,7 +237,6 @@ class ScoreBoard {
 		this.addOut();
 		this.strikeCount = 1;
 		this.ballCount = 1;
-		this.countContainer.innerHTML = `${this.ballCount}-${this.strikeCount}`;
 		this.saveData();
 	}
 	addOut(){
@@ -248,33 +244,29 @@ class ScoreBoard {
 		if(this.outCount>2){
 			this.nextInning();
 		}else{
-			document.querySelector(`[data-out-num="${this.outCount}"]`).classList.add('active');
+			this.saveData();
 		}
+		
 	}
 	nextInning(){
 		this.outCount = 0;
-		document.querySelectorAll('[data-out-num]').forEach(out=>{
-			out.classList.remove('active');
-		})
-		console.log(this.inningSide);
+		this.clearBases();
 		if(this.inningSide==='Top'){
 			this.upToBat = 'home';
 			this.inningSide='Bottom';
 			this.inningSideIcon.innerHTML = "arrow_drop_down";
+			this.homeContainer.classList.add('up');
+			this.awayContainer.classList.remove('up');
 		}else{
 			this.inningSide = 'Top';
 			this.upToBat = 'away';
 			this.inning++;
 			this.inningSideIcon.innerHTML = "arrow_drop_up";
 			this.inningNumber.innerHTML = this.inning;
-		}
-		if(this.upToBat === 'home'){
-			this.homeContainer.classList.add('up');
-			this.awayContainer.classList.remove('up');
-		}else{
 			this.awayContainer.classList.add('up');
 			this.homeContainer.classList.remove('up');
 		}
+		this.saveData();
 	}
 	print(location = document.body){
 		location.append(this.scoreBoard);
@@ -298,6 +290,8 @@ class ScoreBoard {
 		bases.forEach(base=>{
 			base.classList.remove('active');
 		});
+		this.baseStatus = [false,false,false,false];
+		this.saveData();
 	}
 	clearOuts(){
 		let outs = document.querySelectorAll('[data-out-num]');
@@ -342,11 +336,15 @@ class ScoreBoard {
 	}
 	saveData(){
 		let currentData = {
+			inningSide: this.inningSide,
 			strikeCount: this.strikeCount,
 			ballCount: this.ballCount,
 			outCount: this.outCount,
 			upToBat: this.upToBat,
-			homeScore: this.homeScore.innerHTML
+			homeScore: this.homeScore,
+			awayScore: this.awayScore,
+			baseStatus: JSON.stringify(this.baseStatus),
+			inning: this.inning
 		};
 		var form_data = new FormData();
 		for ( var key in currentData ) {
@@ -362,22 +360,48 @@ class ScoreBoard {
 		.then(res => res.json())
 		.then(data =>{
 			console.log(data);
+			this.inningSide = data.inningSide;
 			this.ballCount = data.ballCount;
 			this.strikeCount = data.strikeCount;
 			this.outCount = data.outCount;
 			this.countContainer.innerHTML = `${this.ballCount}-${this.strikeCount}`;
+			JSON.parse(data.baseStatus).forEach((baseStat,index) => {
+				this.baseStatus[index] = baseStat;
+			});
+			this.inning = data.inning;
+			this.updateDisplay();
 		});
+
 	}
-	updateDisplay(data){
+	updateDisplay(){
 		this.homeScoreDiv.innerHTML = this.homeScore;
 		this.awayScoreDiv.innerHTML = this.awayScore;
 		this.countContainer.innerHTML = `${this.ballCount}-${this.strikeCount}`;
 		this.inningNumber.innerHTML = this.inning;
-		if(this.inningSide = 'Top'){
+		if(this.inningSide == 'Top'){
 			this.inningSideIcon.innerHTML = "arrow_drop_up";
 		}else{
 			this.inningSideIcon.innerHTML = "arrow_drop_down";
 		}
+		if(this.outCount == 2){
+			document.querySelector(`[data-out-num="2"]`).classList.add('active');
+			document.querySelector(`[data-out-num="1"]`).classList.add('active');
+		}
+		if(this.outCount == 1){
+			document.querySelector(`[data-out-num="1"]`).classList.add('active');
+			document.querySelector(`[data-out-num="2"]`).classList.remove('active');
+		}
+		if(this.outCount == 0){
+			document.querySelector(`[data-out-num="1"]`).classList.remove('active');
+			document.querySelector(`[data-out-num="2"]`).classList.remove('active');
+		}
+		this.baseStatus.forEach((base,index) => {
+			if(base){
+				this.bases[index].classList.add('active');
+			}else{
+				this.bases[index].classList.remove('active');
+			}
+		});
 	}
 }
 let exampleSB = new ScoreBoard('The Nice Guys','Other Guys');

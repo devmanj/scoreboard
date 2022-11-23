@@ -6,8 +6,17 @@ This small web app is written with HTML, CSS, Javascript, and a little bit of PH
 ## Community Guidelines
 Be cool man.
 
-### Version 1.0:
-#### Feature List
+
+# Version History
+
+### Version 1.1 [11/22/22]
+#### Feature List for 1.1
+Built out updateDisplay() function inside Scoreboard class
+Reading and writing to data file is almost completely functional.
+
+
+### Version 1.0 [11/22/22]
+#### Feature List for 1.0
 Operational scoreboard with strike, ball, inning, and out count.
 Unorganized controller with all scoreboard controller.
 Minimal code for walks and strikeouts.
@@ -15,8 +24,11 @@ Baserunners are shown only when someone walks.
 Timer with important features missing.
 Buggy interval that updates the overlay webpage [NEEDS ALOT OF WORK]
 
-#### Key missing features
+## Current Missing Features
 No ability to show baserunners based on singles, doubles, triples, or home runs.
 No ability to manually set individual bases as active or inactive.
 No ability to add or remove time from the timer.
 Table reload function is not functioning properly.
+
+## Current known bugs
+Strikeout is not functioning properly
