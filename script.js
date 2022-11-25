@@ -1,5 +1,7 @@
 class ScoreBoard {
 	constructor(home,away){
+		//this.curTimerMin = 50;
+		//this.curTimerSec = '00';
 		//SCOREBOARD CONTAINER
 		this.scoreBoard = document.createElement('div');
 		this.scoreBoard.classList.add('scoreBoard');
@@ -187,8 +189,38 @@ class ScoreBoard {
 		})
 		this.controller.append(this.timerButton);
 
+		//FIRST BASE TOGGLE BUTTON
+		this.firstBaseButton = document.createElement('a');
+		this.firstBaseButton.classList.add('btn');
+		this.firstBaseButton.innerHTML = 'Toggle 1st';
+		this.firstBaseButton.addEventListener('click', e=>{
+			e.preventDefault();
+			this.toggleBase(1);
+		})
+		this.controller.append(this.firstBaseButton);
+
+		//SECOND BASE TOGGLE BUTTON
+		this.secondBaseButton = document.createElement('a');
+		this.secondBaseButton.classList.add('btn');
+		this.secondBaseButton.innerHTML = 'Toggle 2nd';
+		this.secondBaseButton.addEventListener('click', e=>{
+			e.preventDefault();
+			this.toggleBase(2);
+		})
+		this.controller.append(this.secondBaseButton);
+
+		//THIRD BASE TOGGLE BUTTON
+		this.thirdBaseButton = document.createElement('a');
+		this.thirdBaseButton.classList.add('btn');
+		this.thirdBaseButton.innerHTML = 'Toggle 3rd';
+		this.thirdBaseButton.addEventListener('click', e=>{
+			e.preventDefault();
+			this.toggleBase(3);
+		})
+		this.controller.append(this.thirdBaseButton);
+
 		this.print();
-		this.updater = setInterval(this.getData.bind(this),300);
+		this.updater = setInterval(this.getData.bind(this),1000);
 	}
 	addRun(team){
 		if(team === 'away'){
@@ -234,10 +266,9 @@ class ScoreBoard {
 		}
 	}
 	strikeOut(){
-		this.addOut();
 		this.strikeCount = 1;
 		this.ballCount = 1;
-		this.saveData();
+		this.addOut();
 	}
 	addOut(){
 		this.outCount++;
@@ -274,24 +305,41 @@ class ScoreBoard {
 	}
 	resetBoard(){
 		this.homeScore = 0;
+		this.curTimerMin = 50;
+		this.curTimerSec = '00';
 		this.awayScore = 0;
 		this.inning = 1;
 		this.inningSide = 'Top';
 		this.ballCount = 1;
 		this.strikeCount = 1;
 		this.outCount = 0;
-		this.clearBases();
-		this.clearOuts();
+		this.clearBasesOuts();
 		this.saveData();
-		this.updateDisplay();
 	}
-	clearBases(){
+	clearBasesOuts(){
+		this.baseStatus = [false,false,false,false];
 		let bases = document.querySelectorAll('[data-base-num]');
 		bases.forEach(base=>{
 			base.classList.remove('active');
 		});
-		this.baseStatus = [false,false,false,false];
+		let outs = document.querySelectorAll('[data-out-num]');
+		outs.forEach(out=>{
+			out.classList.remove('active');
+		});
+	}
+	toggleBase(baseNum){
+		let curBase = document.querySelector(`[data-base-num='${baseNum}']`);
+		curBase.classList.toggle('active');
+		this.baseStatus[baseNum-1] = !this.baseStatus[baseNum-1];
+		console.log(this.baseStatus);
 		this.saveData();
+	}
+	clearBases(){
+		this.baseStatus = [false,false,false,false];
+		let bases = document.querySelectorAll('[data-base-num]');
+		bases.forEach(base=>{
+			base.classList.remove('active');
+		});
 	}
 	clearOuts(){
 		let outs = document.querySelectorAll('[data-out-num]');
@@ -303,7 +351,7 @@ class ScoreBoard {
 		if(!this.gameInterval){
 			this.timerButton.innerHTML = 'Stop Timer';
 			this.endTime = new Date();
-			this.endTime.setSeconds(this.endTime.getSeconds() + 5);
+			this.endTime.setSeconds(this.endTime.getSeconds() + 60*50);
 			this.gameInterval = setInterval(this.timerExec.bind(this),1000);
 		}else{
 			console.log('Timer is already going.');
@@ -321,9 +369,11 @@ class ScoreBoard {
 		if(seconds<10){
 			seconds = `0${seconds}`;
 		}
-		console.log(`${minutes}:${seconds}`);
-		console.log(this.timeRemaining);
-		document.querySelector('.timerContainer').innerHTML = `${minutes}:${seconds}`;
+		this.curTimerMin = minutes;
+		this.curTimerSec = seconds;
+		//console.log(`${minutes}:${seconds}`);
+		//console.log(this.timeRemaining);
+		//document.querySelector('.timerContainer').innerHTML = `${minutes}:${seconds}`;
 		if (this.timeRemaining < 0) {
 			let audio = new Audio('AirHorn.mp4');
 			audio.play();
@@ -333,9 +383,12 @@ class ScoreBoard {
 			console.log(this);
 			clearInterval(this.gameInterval);
 		}
+		this.saveData();
 	}
 	saveData(){
 		let currentData = {
+			curTimerMin: this.curTimerMin,
+			curTimerSec: this.curTimerSec,
 			inningSide: this.inningSide,
 			strikeCount: this.strikeCount,
 			ballCount: this.ballCount,
@@ -346,6 +399,7 @@ class ScoreBoard {
 			baseStatus: JSON.stringify(this.baseStatus),
 			inning: this.inning
 		};
+		console.log(Object.entries(currentData));
 		var form_data = new FormData();
 		for ( var key in currentData ) {
 			form_data.append(key, currentData[key]);
@@ -356,14 +410,21 @@ class ScoreBoard {
 		});
 	}
 	getData(){
+		//console.log(this.curTimerMin);
 		fetch('data.json')
 		.then(res => res.json())
 		.then(data =>{
-			console.log(data);
+			//console.log(data);
+			if(data.curTimerMin){
+				this.curTimerMin = data.curTimerMin;
+				this.curTimerSec = data.curTimerSec;
+			}
 			this.inningSide = data.inningSide;
 			this.ballCount = data.ballCount;
 			this.strikeCount = data.strikeCount;
 			this.outCount = data.outCount;
+			this.homeScore = data.homeScore;
+			this.awayScore = data.awayScore;
 			this.countContainer.innerHTML = `${this.ballCount}-${this.strikeCount}`;
 			JSON.parse(data.baseStatus).forEach((baseStat,index) => {
 				this.baseStatus[index] = baseStat;
@@ -374,6 +435,10 @@ class ScoreBoard {
 
 	}
 	updateDisplay(){
+		if(this.curTimerMin){
+			this.timerContainer.innerHTML = `${this.curTimerMin}:${this.curTimerSec}`;
+		}
+		
 		this.homeScoreDiv.innerHTML = this.homeScore;
 		this.awayScoreDiv.innerHTML = this.awayScore;
 		this.countContainer.innerHTML = `${this.ballCount}-${this.strikeCount}`;
@@ -404,4 +469,4 @@ class ScoreBoard {
 		});
 	}
 }
-let exampleSB = new ScoreBoard('The Nice Guys','Other Guys');
+let exampleSB = new ScoreBoard('TNG','Other Guys');
