@@ -9,6 +9,17 @@ Be cool man.
 
 # Version History
 
+### Version 1.2 [11/25/22]
+
+Timer is a bit buggy, but for the most part the code is functioning properly.
+
+#### Added:
+Base toggling
+Functioning (almost) timer
+
+#### Need to add:
+Count reset button
+
 ### Version 1.1 [11/22/22]
 #### Feature List for 1.1
 Built out updateDisplay() function inside Scoreboard class
