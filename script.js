@@ -469,4 +469,4 @@ class ScoreBoard {
 		});
 	}
 }
-let exampleSB = new ScoreBoard('TNG','Other Guys');
+let exampleSB = new ScoreBoard('TNG','Test');

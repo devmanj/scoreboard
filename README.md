@@ -9,6 +9,10 @@ Be cool man.
 
 # Version History
 
+
+### Version 1.3 [11/29/22]
+Fixed data update for overlay
+
 ### Version 1.2 [11/25/22]
 
 Timer is a bit buggy, but for the most part the code is functioning properly.
